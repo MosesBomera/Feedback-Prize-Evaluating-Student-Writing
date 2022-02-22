@@ -98,7 +98,7 @@ def calculateWordIndices(full_text, discourse_start, discourse_end):
 def getSegmentBounds(string):
     """Get the starting index and last index of a given segment."""
     string = string.split()
-    return int(string[0]) + 1, int(string[-1]) + 1
+    return int(string[0]), int(string[-1])
 
 
 def getFullLabelSequence(segmentSequence,labelSequence, textArrayLen):
