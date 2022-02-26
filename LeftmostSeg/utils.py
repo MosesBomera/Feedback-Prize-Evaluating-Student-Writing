@@ -1,4 +1,5 @@
 import time
+from itertools import chain
 from tqdm import tqdm
 import pandas as pd
 
@@ -103,19 +104,30 @@ def getSegmentBounds(string):
 
 def getFullLabelSequence(segmentSequence,labelSequence, textArrayLen):
     """Get the full label sequence for a given essay."""
+    def getGaps(start, end, segmentSequence):
+        """Get gaps in a sequence. https://stackoverflow.com/a/63814623/16419190"""
+        ranges = sorted(segmentSequence)
+        gaps = chain((start - 1,), chain.from_iterable(segmentSequence), (end + 1,))
+        return [(x+1, y-1) for x, y in zip(gaps, gaps) if x+1 < y]
+    
+    # Sort the segment sequence. (Might be redundant.)
+    segmentSequence = sorted(segmentSequence)
+    # Get gaps.
+    gaps = getGaps(0, textArrayLen - 1, segmentSequence)
     # Add discourse types to the segmentSequence.
     segmentSequence = [ss + (ls,) for ss, ls in zip(segmentSequence, labelSequence)]
+    gapSequence = [(segment[0], segment[1], 'Untyped') for segment in gaps]
     # Sort the sequence by the second element.
-    segmentSequence = sorted(segmentSequence, key=lambda seg: seg[1])
+    segmentSequence = sorted(segmentSequence + gapSequence, key=lambda seg: seg[1])
     for idx in range(len(segmentSequence)):
         try:
-            if  segmentSequence[idx+1][0] - segmentSequence[idx][1] != 1:
-                segmentSequence.insert(idx + 1, (segmentSequence[idx][1] + 1, segmentSequence[idx + 1][0] - 1, 'Untyped'))
+            if segmentSequence[idx+1][0] == segmentSequence[idx][1]:
+                # Shift the next bound by one from the end bound of the previous bound.
+                segmentSequence[idx+1] = (
+                    segmentSequence[idx][1] + 1,segmentSequence[idx+1][1], segmentSequence[idx+1][2]
+                    )
         except IndexError:
             continue
-    # Bridge undefined closing segments.
-    if segmentSequence[-1][1] < textArrayLen - 1:
-        segmentSequence.append((segmentSequence[-1][1] + 1, textArrayLen - 1, 'Untyped'))
     return segmentSequence
 
 
