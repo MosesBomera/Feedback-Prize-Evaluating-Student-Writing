@@ -188,7 +188,7 @@ class Procedure(object):
             optimizer.step()
 
         time_pass = time.time() - time_start
-        return total_loss, time_pass
+        return total_loss / len(dataset), time_pass
 
     @staticmethod
     def evaluate(model, dataset):
